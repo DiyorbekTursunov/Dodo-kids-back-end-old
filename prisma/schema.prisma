@@ -71,18 +71,18 @@ model ProductProcess {
     employeeId         String?     @map("employee_id")
     departmentId       String      @map("department_id")
     productPackId      String      @map("product_pack_id")
-    outsourseCompanyId String?     @default("")
+    outsourseCompanyId String?     // REMOVED @default("") - this was causing the issue
     employee           Employee?   @relation(fields: [employeeId], references: [id])
     department         Department  @relation(fields: [departmentId], references: [id])
     productPack        ProductPack @relation("ProductPackProcesses", fields: [productPackId], references: [id])
-    outsourseCompany   String?
 
-    senderDepartmentId   String? @default("")
-    receiverDepartmentId String? @default("")
+    senderDepartmentId   String?     // REMOVED @default("") - empty strings are not ideal
+    receiverDepartmentId String?     // REMOVED @default("") - empty strings are not ideal
 
-    senderDepartment   String?           @default("")
-    receiverDepartment String?           @default("")
-    OutsourseCompany   OutsourseCompany? @relation(fields: [outsourseCompanyId], references: [id])
+    senderDepartment   String?       // REMOVED @default("") - empty strings are not ideal
+    receiverDepartment String?       // REMOVED @default("") - empty strings are not ideal
+
+    OutsourseCompany OutsourseCompany? @relation(fields: [outsourseCompanyId], references: [id])
 }
 
 model Color {
@@ -128,9 +128,10 @@ model Department {
 }
 
 model OutsourseCompany {
-    id        String           @id @default(uuid())
-    name      String
-    processes ProductProcess[] @relation
+    id             String           @id @default(uuid())
+    name           String
+    // processes      ProductProcess[] @relation("ProductToSize")
+    ProductProcess ProductProcess[]
 }
 
 // User model

@@ -16,6 +16,8 @@ import {
 } from "./middleware/static.middleware"; // Add this line
 import outsourseCompanyRoutes from "./routes/outsourseCompany.routes";
 import searchRouters from "./routes/search.routes";
+import dashboardRoutes from "./routes/dashboard.routes";
+import filterRouters from "./routes/filters.routes";
 
 dotenv.config();
 
@@ -62,7 +64,8 @@ app.use("/api/product_pack", productPackRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/outsourse_company", outsourseCompanyRoutes);
 app.use("/api/models", searchRouters);
-
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/models", filterRouters);
 
 // Error handler
 app.use((err: any, _req: Request, res: Response, _next: any) => {

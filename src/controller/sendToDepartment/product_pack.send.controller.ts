@@ -12,7 +12,7 @@ const sendToDepartmentSchema = z.object({
   invalidCount: z.number().int().nonnegative().optional().default(0),
   invalidReason: z.string().optional().default(""),
   employeeId: z.string().uuid(),
-  outsourseCompanyId: z.string().optional().default(""),
+  outsourseCompanyId: z.string().uuid().optional().nullable(),
 });
 
 // Send Product Pack to another department
@@ -28,7 +28,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       invalidCount,
       invalidReason,
       employeeId,
-      outsourseCompanyId = "",
+      outsourseCompanyId,
     } = validatedData;
 
     // Log input for debugging
@@ -36,6 +36,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       productPackId,
       targetDepartmentId,
       employeeId,
+      outsourseCompanyId,
     });
 
     // Find the source product pack
@@ -56,10 +57,6 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       where: { id: targetDepartmentId },
     });
 
-    const outsourseCompany = await prisma.outsourseCompany.findUnique({
-      where: { id: outsourseCompanyId },
-    });
-
     if (!targetDepartment) {
       return res.status(404).json({ error: "Target department not found" });
     }
@@ -73,6 +70,20 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       return res
         .status(404)
         .json({ error: `Employee not found for ID: ${employeeId}` });
+    }
+
+    // Validate outsourse company if provided
+    let actualOutsourseCompanyName = null;
+    if (outsourseCompanyId) {
+      actualOutsourseCompanyName = await prisma.outsourseCompany.findUnique({
+        where: { id: outsourseCompanyId },
+      });
+
+      if (!actualOutsourseCompanyName) {
+        return res.status(404).json({
+          error: `Outsourse Company not found for ID: ${outsourseCompanyId}`,
+        });
+      }
     }
 
     // Find the latest status
@@ -128,33 +139,39 @@ export const sendToDepartment = async (req: Request, res: Response) => {
 
     // Determine if process is complete
     const isComplete = newSendedCount + newInvalidCount === totalCount;
-    const newStatus = isComplete ? "Yuborilgan" : "ToliqYuborilmagan";
+    const newStatus = isComplete ? "Yuborilgan" : "To'liq yuborilmagan";
 
     // Calculate remaining items
     const residueCount = totalCount - newSendedCount - newInvalidCount;
 
+    // Prepare base data for new source status
+    const newSourceStatusData: any = {
+      processIsOver: isComplete,
+      status: newStatus,
+      departmentId: sourceProductPack.departmentId,
+      productPackId: productPackId,
+      employeeId,
+      acceptCount: totalCount,
+      sentCount: Number(sendCount),
+      residueCount,
+      invalidCount: Number(invalidCount),
+      invalidReason: invalidReason || "",
+      senderDepartment: sourceProductPack.departmentName,
+      receiverDepartment: targetDepartment.name,
+      senderDepartmentId: sourceProductPack.departmentId,
+      receiverDepartmentId: targetDepartmentId,
+    };
+
+    // Only add OutsourseCompany if outsourseCompanyId is provided
+    if (outsourseCompanyId) {
+      newSourceStatusData.OutsourseCompany = {
+        connect: { id: outsourseCompanyId },
+      };
+    }
+
     // Create a new status for the source product pack
     const newSourceStatus = await prisma.productProcess.create({
-      data: {
-        processIsOver: isComplete,
-        status: newStatus,
-        departmentId: sourceProductPack.departmentId,
-        productPackId: productPackId,
-        employeeId,
-        acceptCount: latestStatus.acceptCount || totalCount,
-        sentCount: Number(sendCount),
-        residueCount: residueCount,
-        invalidCount: Number(invalidCount),
-        invalidReason: invalidReason || "",
-        outsourseCompanyId: outsourseCompanyId,
-        outsourseCompany: outsourseCompany?.name,
-
-        senderDepartment: sourceProductPack.departmentName,
-        receiverDepartment: targetDepartment.name,
-
-        senderDepartmentId: sourceProductPack.departmentId,
-        receiverDepartmentId: targetDepartmentId,
-      },
+      data: newSourceStatusData,
     });
 
     // Update the source ProductPack's processIsOver flag if needed
@@ -168,6 +185,29 @@ export const sendToDepartment = async (req: Request, res: Response) => {
     // Get the parent ID from the source product pack
     const parentId = sourceProductPack.parentId || sourceProductPack.id;
 
+    // Prepare base data for new product pack process
+    const newProcessData: any = {
+      processIsOver: false,
+      status: "Pending",
+      departmentId: targetDepartmentId,
+      employeeId,
+      totalCount: totalCount,
+      acceptCount: 0,
+      sentCount: 0,
+      residueCount: Number(sendCount),
+      invalidCount: 0,
+      invalidReason: "",
+      senderDepartmentId: sourceProductPack.departmentId,
+      receiverDepartmentId: targetDepartmentId,
+      senderDepartment: sourceProductPack.departmentName,
+      receiverDepartment: targetDepartment.name,
+    };
+
+    // Only add OutsourseCompany if outsourseCompanyId is provided
+    if (outsourseCompanyId) {
+      newProcessData.OutsourseCompany = { connect: { id: outsourseCompanyId } };
+    }
+
     // Create a new ProductPack for the target department
     const newProductPack = await prisma.productPack.create({
       data: {
@@ -178,23 +218,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
         totalCount: Number(sendCount),
         processIsOver: false,
         processes: {
-          create: {
-            processIsOver: false,
-            status: "Pending",
-            departmentId: targetDepartmentId,
-            employeeId,
-            acceptCount: 0,
-            sentCount: 0,
-            residueCount: Number(sendCount),
-            invalidCount: 0,
-            invalidReason: "",
-
-            senderDepartmentId: sourceProductPack.departmentId,
-            receiverDepartmentId: targetDepartmentId,
-
-            senderDepartment: sourceProductPack.departmentName,
-            receiverDepartment: targetDepartment.name,
-          },
+          create: newProcessData,
         },
       },
       include: {
@@ -217,18 +241,16 @@ export const sendToDepartment = async (req: Request, res: Response) => {
         details: err.errors,
       });
     }
-
-    // if (
-    //   err instanceof Prisma.PrismaClientKnownRequestError &&
-    //   err.code === "P2003"
-    // ) {
-    //   const meta = err.meta || {};
-    //   return res.status(400).json({
-    //     error: "Foreign key constraint violation",
-    //     details: `Invalid reference: ${JSON.stringify(meta)}`,
-    //   });
-    // }
-
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2003"
+    ) {
+      const meta = err.meta || {};
+      return res.status(400).json({
+        error: "Foreign key constraint violation",
+        details: `Invalid reference: ${JSON.stringify(meta)}`,
+      });
+    }
     console.error("Error sending product to department:", err);
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
     res.status(500).json({

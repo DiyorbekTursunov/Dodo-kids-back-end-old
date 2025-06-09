@@ -14,6 +14,7 @@ const warehouseSchema = z.object({
   invalidReason: z.string().optional().default(""),
   employeeId: z.string().uuid(),
   departmentName: z.string().optional(),
+  outsourseCompanyId: z.string().uuid().optional().nullable(),
 });
 
 export const addWareHouse = async (req: Request, res: Response) => {
@@ -29,10 +30,11 @@ export const addWareHouse = async (req: Request, res: Response) => {
       invalidReason,
       employeeId,
       departmentName,
+      outsourseCompanyId,
     } = validatedData;
 
     // Log input IDs for debugging
-    console.log("Input IDs:", { productId, departmentId, employeeId });
+    console.log("Input IDs:", { productId, departmentId, employeeId, outsourseCompanyId });
 
     // Check if product exists
     const product = await prisma.product.findUnique({
@@ -63,10 +65,23 @@ export const addWareHouse = async (req: Request, res: Response) => {
       return res.status(404).json({ error: `Employee not found for ID: ${employeeId}` });
     }
 
+    // Validate outsourse company if provided
+    if (outsourseCompanyId) {
+      const outsourseCompany = await prisma.outsourseCompany.findUnique({
+        where: { id: outsourseCompanyId },
+      });
+
+      if (!outsourseCompany) {
+        return res.status(404).json({
+          error: `Outsourse Company not found for ID: ${outsourseCompanyId}`
+        });
+      }
+    }
+
     // Generate a parent ID
     const parentId = uuidv4();
 
-    // Create the product pack
+    // Create the product pack with explicit null handling
     const productPack = await prisma.productPack.create({
       data: {
         parentId: parentId,
@@ -83,15 +98,22 @@ export const addWareHouse = async (req: Request, res: Response) => {
           create: {
             status: "QabulQilingan",
             departmentId,
-            employeeId: employeeId ?? null,
+            employeeId,
             acceptCount: totalCount,
             sentCount: 0,
             residueCount: totalCount,
             invalidCount,
             invalidReason,
+            // Explicitly set outsourseCompanyId to null if not provided
+            // This overrides the schema's @default("") which causes the FK constraint issue
+            outsourseCompanyId: outsourseCompanyId || null,
+            senderDepartmentId: null,
+            receiverDepartmentId: null,
+            senderDepartment: null,
+            receiverDepartment: null,
           },
         },
-      } as unknown as Prisma.ProductPackCreateInput,
+      },
       include: {
         product: true,
         processes: true,
