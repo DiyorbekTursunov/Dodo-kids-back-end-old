@@ -12,7 +12,7 @@ const sendToDepartmentSchema = z.object({
   invalidCount: z.number().int().nonnegative().optional().default(0),
   invalidReason: z.string().optional().default(""),
   employeeId: z.string().uuid(),
-  outsourseCompanyId: z.string().uuid().optional().default(""),
+  outsourseCompanyId: z.string().optional().default(""),
 });
 
 // Send Product Pack to another department
@@ -28,7 +28,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       invalidCount,
       invalidReason,
       employeeId,
-      outsourseCompanyId,
+      outsourseCompanyId = "",
     } = validatedData;
 
     // Log input for debugging
@@ -186,7 +186,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
 
             senderDepartmentId: sourceProductPack.departmentId,
             receiverDepartmentId: targetDepartmentId,
-            
+
             senderDepartment: sourceProductPack.departmentName,
             receiverDepartment: targetDepartment.name,
           },
