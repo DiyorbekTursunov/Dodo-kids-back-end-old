@@ -18,6 +18,12 @@ export const acceptProductPack = async (req: Request, res: Response) => {
       .json({ error: "Required fields are missing or invalid" });
   }
 
+  // Validate invalidCount to ensure it's a non-negative integer
+  const invalidCountNum = Number(invalidCount);
+  if (isNaN(invalidCountNum) || !Number.isInteger(invalidCountNum) || invalidCountNum < 0) {
+    return res.status(400).json({ error: "Invalid count must be a non-negative integer" });
+  }
+
   try {
     // Find the product pack with its pending status
     const productPack = await prisma.productPack.findUnique({
@@ -55,15 +61,14 @@ export const acceptProductPack = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Employee not found" });
     }
 
-    // Check if department is "qadoqlash" - if so, we will end the process
-    // Check both the department name from the employee and the department value from productPack
+    // Check if department is "ombor" - if so, we will end the process
     const isQadoqlashDepartment =
       employee.department.name.toLowerCase() === "ombor" ||
       (productPack.departmentName?.toLowerCase() === "ombor");
 
     // Validate that invalidCount doesn't exceed totalCount
     const totalCount = productPack.totalCount;
-    if (Number(invalidCount) > totalCount) {
+    if (invalidCountNum > totalCount) {
       return res.status(400).json({
         error: "Invalid count cannot exceed total count",
         total: totalCount,
@@ -71,7 +76,7 @@ export const acceptProductPack = async (req: Request, res: Response) => {
     }
 
     // Calculate acceptCount automatically
-    const acceptCount = totalCount - Number(invalidCount);
+    const acceptCount = totalCount - invalidCountNum;
 
     // Start a transaction to ensure data consistency
     const result = await prisma.$transaction(async (prismaClient) => {
@@ -86,7 +91,6 @@ export const acceptProductPack = async (req: Request, res: Response) => {
       // 3. Create new accepted status
       const newStatus = await prismaClient.productProcess.create({
         data: {
-          // If the department is "qadoqlash", we mark the process as complete
           processIsOver: isQadoqlashDepartment,
           status: "QabulQilingan",
           departmentId: productPack.departmentId,
@@ -95,13 +99,12 @@ export const acceptProductPack = async (req: Request, res: Response) => {
           acceptCount,
           sentCount: 0,
           residueCount,
-          invalidCount: Number(invalidCount),
+          invalidCount: invalidCountNum,
           invalidReason: invalidReason || "",
         },
       });
 
       // 4. Update the product pack
-      // If it's the qadoqlash department, mark the entire process as complete
       await prismaClient.productPack.update({
         where: { id: productPackId },
         data: { processIsOver: isQadoqlashDepartment },
@@ -117,10 +120,10 @@ export const acceptProductPack = async (req: Request, res: Response) => {
     // Return success response
     res.status(200).json({
       message: `Successfully accepted ${acceptCount} items${
-        invalidCount > 0 ? ` and marked ${invalidCount} as invalid` : ""
+        invalidCountNum > 0 ? ` and marked ${invalidCountNum} as invalid` : ""
       }${
         result.isComplete
-          ? ". Process completed as this is the final qadoqlash department."
+          ? ". Process completed as this is the final ombor department."
           : ""
       }`,
       deletedPendingStatus: result.pendingStatusId,
