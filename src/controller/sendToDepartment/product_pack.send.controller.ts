@@ -145,7 +145,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
     const residueCount = totalCount - newSendedCount - newInvalidCount;
 
     // Prepare base data for new source status
-    const newSourceStatusData: any = {
+    const newSourceStatusData: Prisma.ProductProcessUncheckedCreateInput = {
       processIsOver: isComplete,
       status: newStatus,
       departmentId: sourceProductPack.departmentId,
@@ -160,14 +160,8 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       receiverDepartment: targetDepartment.name,
       senderDepartmentId: sourceProductPack.departmentId,
       receiverDepartmentId: targetDepartmentId,
+      outsourseCompanyId: outsourseCompanyId, // Use foreign key directly
     };
-
-    // Only add OutsourseCompany if outsourseCompanyId is provided
-    if (outsourseCompanyId) {
-      newSourceStatusData.OutsourseCompany = {
-        connect: { id: outsourseCompanyId },
-      };
-    }
 
     // Create a new status for the source product pack
     const newSourceStatus = await prisma.productProcess.create({
@@ -186,12 +180,11 @@ export const sendToDepartment = async (req: Request, res: Response) => {
     const parentId = sourceProductPack.parentId || sourceProductPack.id;
 
     // Prepare base data for new product pack process
-    const newProcessData: any = {
+    const newProcessData: Prisma.ProductProcessUncheckedCreateWithoutProductPackInput = {
       processIsOver: false,
       status: "Pending",
       departmentId: targetDepartmentId,
       employeeId,
-      totalCount: totalCount,
       acceptCount: 0,
       sentCount: 0,
       residueCount: Number(sendCount),
@@ -201,12 +194,8 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       receiverDepartmentId: targetDepartmentId,
       senderDepartment: sourceProductPack.departmentName,
       receiverDepartment: targetDepartment.name,
+      outsourseCompanyId: outsourseCompanyId, // Use foreign key directly
     };
-
-    // Only add OutsourseCompany if outsourseCompanyId is provided
-    if (outsourseCompanyId) {
-      newProcessData.OutsourseCompany = { connect: { id: outsourseCompanyId } };
-    }
 
     // Create a new ProductPack for the target department
     const newProductPack = await prisma.productPack.create({

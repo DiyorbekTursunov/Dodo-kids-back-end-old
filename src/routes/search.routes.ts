@@ -12,4 +12,9 @@ router.get("/search", (req: Request, res: Response, next: NextFunction) => {
     searchProductsByModel(req, res).catch(next);
 });
 
+
+router.get("/product", (req: Request, res: Response, next: NextFunction) => {
+    getFilteredProductPacks(req, res).catch(next);
+});
+
 export default router;
