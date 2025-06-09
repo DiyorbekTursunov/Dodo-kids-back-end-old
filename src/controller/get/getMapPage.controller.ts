@@ -204,7 +204,7 @@ export const getConsolidatedCaseTrackerStatus = async (
         processes: {
           include: {
             department: true,
-            outsourseCompany: true,
+            OutsourseCompany: true,
           },
           orderBy: { date: "desc" },
         },
@@ -265,7 +265,7 @@ export const getConsolidatedCaseTrackerStatus = async (
           residueCount: process.residueCount,
           invalidReason: process.invalidReason,
           department: process.department,
-          outsourseCompany: process.outsourseCompany,
+          outsourseCompany: process.OutsourseCompany ?? null,
           isOutsourced: process.isOutsourced,
         })),
       };
