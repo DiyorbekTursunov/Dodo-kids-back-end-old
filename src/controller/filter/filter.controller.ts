@@ -83,13 +83,13 @@ export const getFilteredProductPacks = async (req: Request, res: Response) => {
         [filters.sortBy]: filters.sortOrder,
       },
       include: {
-        Product: {
+        product: {
           include: {
-            color: true,
-            size: true,
+            colors: true,
+            sizes: true,
           },
         },
-        status: true,
+        processes: true,
       },
     });
 
@@ -97,8 +97,8 @@ export const getFilteredProductPacks = async (req: Request, res: Response) => {
     const processedProductPacks = productPacks.map((pack) => {
       // Find the latest status entry for this product pack
       const latestStatus =
-        pack.status.length > 0
-          ? pack.status.reduce((latest, current) =>
+        pack.processes.length > 0
+          ? pack.processes.reduce((latest, current) =>
               new Date(current.updatedAt) > new Date(latest.updatedAt) ? current : latest
             )
           : null;
@@ -110,7 +110,7 @@ export const getFilteredProductPacks = async (req: Request, res: Response) => {
           statusValue = "Pending";
         } else if (latestStatus.status === "Qabul qilingan") {
           statusValue = "Qabul qilingan";
-        } else if (latestStatus.sendedCount < latestStatus.acceptCount) {
+        } else if ((latestStatus.sentCount ?? 0) < (latestStatus.acceptCount ?? 0)) {
           statusValue = "To'liq yuborilmagan";
         } else {
           statusValue = "Yuborilgan";
