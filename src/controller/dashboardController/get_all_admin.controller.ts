@@ -27,7 +27,7 @@ export const getAllModelCounts = async (req: Request, res: Response) => {
       prisma.user.count(),
       prisma.productPack.count(),
       prisma.product.count(),
-      prisma.productProtsess.count(),
+      prisma.productProcess.count(),
       // Add additional model counts here as needed
     ]);
 
@@ -49,26 +49,26 @@ export const getAllModelCounts = async (req: Request, res: Response) => {
     const topColors = await prisma.color.findMany({
       include: {
         _count: {
-          select: { Product: true },
+          select: { products: true },
         },
       },
       orderBy: {
-        Product: {
+        products: {
           _count: 'desc',
         },
       },
       take: 5,
     });
 
-    // Get top sizes by product count
+    // Get top sizes by products count
     const topSizes = await prisma.size.findMany({
       include: {
         _count: {
-          select: { Product: true },
+          select: { products: true },
         },
       },
       orderBy: {
-        Product: {
+        products: {
           _count: 'desc',
         },
       },
@@ -81,7 +81,7 @@ export const getAllModelCounts = async (req: Request, res: Response) => {
         _count: {
           select: {
             Employee: true,
-            ProductProtsess: true,
+            processes: true,
           },
         },
       },
@@ -90,14 +90,14 @@ export const getAllModelCounts = async (req: Request, res: Response) => {
     // Calculate process completion percentage for each department
     const departmentProcessStats = await Promise.all(
       departmentStats.map(async (dept) => {
-        const totalProcesses = await prisma.productProtsess.count({
+        const totalProcesses = await prisma.productProcess.count({
           where: { departmentId: dept.id },
         });
 
-        const completedProcesses = await prisma.productProtsess.count({
+        const completedProcesses = await prisma.productProcess.count({
           where: {
             departmentId: dept.id,
-            protsessIsOver: true,
+            processIsOver: true,
           },
         });
 
@@ -109,7 +109,7 @@ export const getAllModelCounts = async (req: Request, res: Response) => {
           id: dept.id,
           name: dept.name,
           employeeCount: dept._count.Employee,
-          processCount: dept._count.ProductProtsess,
+          processCount: dept._count.processes,
           completedProcesses,
           completionPercentage,
         };
@@ -145,12 +145,12 @@ export const getAllModelCounts = async (req: Request, res: Response) => {
         topColors: topColors.map(color => ({
           id: color.id,
           name: color.name,
-          productCount: color._count.Product,
+          productCount: color._count.products,
         })),
         topSizes: topSizes.map(size => ({
           id: size.id,
           name: size.name,
-          productCount: size._count.Product,
+          productCount: size._count.products,
         })),
         departmentStats: departmentProcessStats,
         topProductModels: productColorSizeDistribution.map(p => ({
@@ -239,7 +239,7 @@ export const getModelCountsByDateRange = async (req: Request, res: Response) => 
       prisma.user.count({ where: Object.keys(dateFilterCondition).length > 0 ? dateFilterCondition : undefined }),
       prisma.productPack.count({ where: Object.keys(dateFilterCondition).length > 0 ? dateFilterCondition : undefined }),
       prisma.product.count({ where: Object.keys(dateFilterCondition).length > 0 ? dateFilterCondition : undefined }),
-      prisma.productProtsess.count({ where: Object.keys(dateFilterCondition).length > 0 ? dateFilterCondition : undefined }),
+      prisma.productProcess.count({ where: Object.keys(dateFilterCondition).length > 0 ? dateFilterCondition : undefined }),
     ]);
 
     // Format the response

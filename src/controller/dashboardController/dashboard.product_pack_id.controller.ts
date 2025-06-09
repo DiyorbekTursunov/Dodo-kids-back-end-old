@@ -21,12 +21,12 @@ export const getProductPackStats = async (req: Request, res: Response) => {
     }
 
     // Get aggregated stats for this ProductPack
-    const stats = await prisma.productProtsess.aggregate({
+    const stats = await prisma.productProcess.aggregate({
       where: {
-        productpackId: id,
+        productPackId: id,
       },
       _sum: {
-        sendedCount: true,
+        sentCount: true,
         invalidCount: true,
         residueCount: true,
         acceptCount: true,
@@ -34,15 +34,15 @@ export const getProductPackStats = async (req: Request, res: Response) => {
     });
 
     // Get individual process records for this ProductPack
-    const processes = await prisma.productProtsess.findMany({
+    const processes = await prisma.productProcess.findMany({
       where: {
-        productpackId: id,
+        productPackId: id,
       },
       select: {
         id: true,
         date: true,
         status: true,
-        sendedCount: true,
+        sentCount: true,
         invalidCount: true,
         residueCount: true,
         acceptCount: true,
@@ -62,19 +62,18 @@ export const getProductPackStats = async (req: Request, res: Response) => {
     const productDetails = await prisma.productPack.findUnique({
       where: { id },
       select: {
-        name: true,
         department: true,
         totalCount: true,
-        protsessIsOver: true,
-        Product: {
+        processIsOver: true,
+        product: {
           select: {
             model: true,
-            color: {
+            colors: {
               select: {
                 name: true,
               },
             },
-            size: {
+            sizes: {
               select: {
                 name: true,
               },
@@ -89,7 +88,7 @@ export const getProductPackStats = async (req: Request, res: Response) => {
       data: {
         details: productDetails,
         stats: {
-          sendedCount: stats._sum.sendedCount || 0,
+          sentCount: stats._sum.sentCount || 0,
           invalidCount: stats._sum.invalidCount || 0,
           residueCount: stats._sum.residueCount || 0,
           acceptCount: stats._sum.acceptCount || 0,

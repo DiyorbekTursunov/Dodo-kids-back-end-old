@@ -79,7 +79,7 @@ export const getDashboardStatsByDateRange = async (
           createdAt: 'desc'
         },
         include: {
-          status: {
+          processes: {
             orderBy: {
               createdAt: 'desc'
             }
@@ -93,12 +93,12 @@ export const getDashboardStatsByDateRange = async (
       } else {
         // Calculate overall stats from ProductPacks in the date range
         productPacks.forEach(pack => {
-          if (pack.status && pack.status.length > 0) {
-            const latestStatus = pack.status[0]; // Already ordered by createdAt desc
-            overallStats.sendedCount += latestStatus.sendedCount;
-            overallStats.invalidCount += latestStatus.invalidCount;
-            overallStats.acceptCount += latestStatus.acceptCount;
-            overallStats.residueCount += latestStatus.residueCount;
+          if (pack.processes && pack.processes.length > 0) {
+            const latestStatus = pack.processes[0]; // Already ordered by createdAt desc
+            overallStats.sendedCount += latestStatus.sentCount ?? 0;
+            overallStats.invalidCount += latestStatus.invalidCount ?? 0;
+            overallStats.acceptCount += latestStatus.acceptCount ?? 0;
+            overallStats.residueCount += latestStatus.residueCount ?? 0;
           }
         });
       }
@@ -112,7 +112,7 @@ export const getDashboardStatsByDateRange = async (
           createdAt: 'desc'
         },
         include: {
-          status: {
+          processes: {
             orderBy: {
               createdAt: 'desc'
             }
@@ -122,12 +122,12 @@ export const getDashboardStatsByDateRange = async (
 
       // Calculate stats from all data when falling back
       productPacks.forEach(pack => {
-        if (pack.status && pack.status.length > 0) {
-          const latestStatus = pack.status[0]; // Already ordered by createdAt desc
-          overallStats.sendedCount += latestStatus.sendedCount;
-          overallStats.invalidCount += latestStatus.invalidCount;
-          overallStats.acceptCount += latestStatus.acceptCount;
-          overallStats.residueCount += latestStatus.residueCount;
+        if (pack.processes && pack.processes.length > 0) {
+          const latestStatus = pack.processes[0]; // Already ordered by createdAt desc
+            overallStats.sendedCount += latestStatus.sentCount ?? 0;
+            overallStats.invalidCount += latestStatus.invalidCount ?? 0;
+            overallStats.acceptCount += latestStatus.acceptCount ?? 0;
+            overallStats.residueCount += latestStatus.residueCount ?? 0;
         }
       });
     }
@@ -150,7 +150,7 @@ export const getDashboardStatsByDateRange = async (
             ...(Object.keys(dateFilter).length > 0 ? dateFilter : {})
           },
           include: {
-            status: {
+            processes: {
               orderBy: {
                 createdAt: 'desc'
               }
@@ -186,12 +186,12 @@ export const getDashboardStatsByDateRange = async (
         let residueCount = 0;
 
         productPacksInDepartment.forEach(pack => {
-          if (pack.status && pack.status.length > 0) {
-            const latestStatus = pack.status[0]; // Already ordered by createdAt desc
-            sendedCount += latestStatus.sendedCount;
-            invalidCount += latestStatus.invalidCount;
-            acceptCount += latestStatus.acceptCount;
-            residueCount += latestStatus.residueCount;
+          if (pack.processes && pack.processes.length > 0) {
+            const latestStatus = pack.processes[0]; // Already ordered by createdAt desc
+            overallStats.sendedCount += latestStatus.sentCount ?? 0;
+            overallStats.invalidCount += latestStatus.invalidCount ?? 0;
+            overallStats.acceptCount += latestStatus.acceptCount ?? 0;
+            overallStats.residueCount += latestStatus.residueCount ?? 0;
           }
         });
 

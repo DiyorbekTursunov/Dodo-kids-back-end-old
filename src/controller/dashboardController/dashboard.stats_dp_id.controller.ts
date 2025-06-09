@@ -35,19 +35,19 @@ export const getEmployeeStats = async (req: Request, res: Response) => {
     }
 
     // Get all processes handled by this employee
-    const employeeProcesses = await prisma.productProtsess.findMany({
+    const employeeProcesses = await prisma.productProcess.findMany({
       where: {
         employeeId,
       },
       select: {
-        productpackId: true,
+        productPackId: true,
       },
-      distinct: ["productpackId"],
+      distinct: ["productPackId"],
     });
 
     // Get the IDs of all ProductPacks handled by this employee
     const productPackIds = employeeProcesses.map(
-      (process) => process.productpackId
+      (process) => process.productPackId
     );
 
     // Get all ProductPacks this employee has worked on
@@ -59,11 +59,10 @@ export const getEmployeeStats = async (req: Request, res: Response) => {
       },
       select: {
         id: true,
-        name: true,
         totalCount: true,
-        protsessIsOver: true,
+        processIsOver: true,
         department: true,
-        Product: {
+        product: {
           select: {
             model: true,
           },
@@ -72,12 +71,12 @@ export const getEmployeeStats = async (req: Request, res: Response) => {
     });
 
     // Get aggregated stats for all processes handled by this employee
-    const stats = await prisma.productProtsess.aggregate({
+    const stats = await prisma.productProcess.aggregate({
       where: {
         employeeId,
       },
       _sum: {
-        sendedCount: true,
+        sentCount: true,
         invalidCount: true,
         residueCount: true,
         acceptCount: true,
@@ -85,7 +84,7 @@ export const getEmployeeStats = async (req: Request, res: Response) => {
     });
 
     // Get detailed process records for this employee
-    const processes = await prisma.productProtsess.findMany({
+    const processes = await prisma.productProcess.findMany({
       where: {
         employeeId,
       },
@@ -93,17 +92,12 @@ export const getEmployeeStats = async (req: Request, res: Response) => {
         id: true,
         date: true,
         status: true,
-        sendedCount: true,
+        sentCount: true,
         invalidCount: true,
         residueCount: true,
         acceptCount: true,
         invalidReason: true,
         department: {
-          select: {
-            name: true,
-          },
-        },
-        productPack: {
           select: {
             name: true,
           },
@@ -131,7 +125,7 @@ export const getEmployeeStats = async (req: Request, res: Response) => {
         totalProductCount,
         productPackCount: productPacks.length,
         stats: {
-          sendedCount: stats._sum.sendedCount || 0,
+          sendedCount: stats._sum.sentCount || 0,
           invalidCount: stats._sum.invalidCount || 0,
           residueCount: stats._sum.residueCount || 0,
           acceptCount: stats._sum.acceptCount || 0,

@@ -10,9 +10,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const totalProductPacks = await prisma.productPack.count();
 
     // Get overall stats
-    const overallStats = await prisma.productProtsess.aggregate({
+    const overallStats = await prisma.productProcess.aggregate({
       _sum: {
-        sendedCount: true,
+        sentCount: true,
         invalidCount: true,
         acceptCount: true,
       },
@@ -26,14 +26,14 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     });
 
     // Calculate overall residueCount using the new formula
-    const overallSendedCount = overallStats._sum.sendedCount || 0;
+    const overallSendedCount = overallStats._sum.sentCount || 0;
     const overallInvalidCount = overallStats._sum.invalidCount || 0;
     const overallAcceptCount = overallStats._sum.acceptCount || 0;
     const overallResidueCount = overallAcceptCount - (overallSendedCount + overallInvalidCount);
 
     // Get all unique departments from ProductPacks
     const uniqueDepartments = await prisma.productPack.findMany({
-      distinct: ["department"],
+      distinct: ["departmentId"],
       select: {
         department: true,
       },
@@ -63,21 +63,21 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         const productPackIds = productPacksInDepartment.map((pack) => pack.id);
 
         // Aggregate stats for all ProductPacks in this department
-        const processStats = await prisma.productProtsess.aggregate({
+        const processStats = await prisma.productProcess.aggregate({
           where: {
-            productpackId: {
+            productPackId: {
               in: productPackIds,
             },
           },
           _sum: {
-            sendedCount: true,
+            sentCount: true,
             invalidCount: true,
             acceptCount: true,
           },
         });
 
         // Calculate residueCount for this department using the new formula
-        const sendedCount = processStats._sum.sendedCount || 0;
+        const sendedCount = processStats._sum.sentCount || 0;
         const invalidCount = processStats._sum.invalidCount || 0;
         const acceptCount = processStats._sum.acceptCount || 0;
 
@@ -103,7 +103,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const dashboardData = {
       totalProductPacks,
       overallStats: {
-        sendedCount: overallStats._sum.sendedCount || 0,
+        sendedCount: overallStats._sum.sentCount || 0,
         invalidCount: overallStats._sum.invalidCount || 0,
         acceptCount: overallStats._sum.acceptCount || 0,
         residueCount: overallResidueCount,
