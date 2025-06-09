@@ -56,6 +56,10 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       where: { id: targetDepartmentId },
     });
 
+    const outsourseCompany = await prisma.outsourseCompany.findUnique({
+      where: { id: outsourseCompanyId },
+    });
+
     if (!targetDepartment) {
       return res.status(404).json({ error: "Target department not found" });
     }
@@ -143,6 +147,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
         invalidCount: Number(invalidCount),
         invalidReason: invalidReason || "",
         outsourseCompanyId: outsourseCompanyId,
+        outsourseCompany: outsourseCompany?.name,
 
         senderDepartment: sourceProductPack.departmentName,
         receiverDepartment: targetDepartment.name,
