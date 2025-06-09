@@ -1,0 +1,136 @@
+# Factory Management API
+
+This is a RESTful API built with Express.js, TypeScript, Prisma ORM, and PostgreSQL, designed for factory employee management.
+
+## Features
+
+- JWT Authentication for employees and admins
+- Role-based access control
+- Employee management (create, read, update, delete)
+- PostgreSQL database integration with Prisma ORM
+
+## Prerequisites
+
+- Node.js (v14+ recommended)
+- PostgreSQL database
+- npm or yarn
+
+## Setup
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd express-prisma-ts-app
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables:
+   - Copy `.env.example` to `.env` (or create a new `.env` file)
+   - Update the `DATABASE_URL` with your PostgreSQL connection string
+   - Set a secure `JWT_SECRET` for token generation
+
+4. Set up the database:
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+
+5. Generate Prisma client:
+   ```bash
+   npx prisma generate
+   ```
+
+6. Create an admin user (development only):
+   After starting the server, make a POST request to `/api/auth/admin/create` with:
+   ```json
+   {
+     "login": "admin",
+     "password": "your-secure-password"
+   }
+   ```
+
+## Running the Application
+
+### Development Mode
+```bash
+npm run dev
+```
+This starts the server with nodemon, which will restart the server whenever you make changes to the source code.
+
+### Production Mode
+```bash
+npm run build
+npm start
+```
+
+## API Endpoints
+
+### Authentication
+- POST `/api/auth/employee/login` - Employee login
+- POST `/api/auth/admin/login` - Admin login
+- POST `/api/auth/admin/create` - Create admin (development only)
+
+### Employees (admin only)
+- GET `/api/employees` - Get all employees
+- GET `/api/employees/:id` - Get an employee by ID
+- POST `/api/employees` - Create a new employee
+- PUT `/api/employees/:id` - Update an employee
+- DELETE `/api/employees/:id` - Delete an employee
+
+## Authentication
+
+The API uses JWT (JSON Web Token) for authentication. To access protected routes, include the token in the Authorization header:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Employee Types
+
+The system supports the following employee types:
+- `ombor` - Warehouse
+- `bichuv` - Cutting
+- `tikuv` - Sewing
+- `skaner` - Scanner
+- `qadoqlash` - Packaging
+
+## Project Structure
+
+```
+express-prisma-ts-app/
+├── dist/                   # Compiled TypeScript files
+├── node_modules/           # Dependencies
+├── prisma/                 # Prisma schema and migrations
+│   └── schema.prisma       # Prisma schema definition
+├── src/                    # Source code
+│   ├── middleware/         # Express middleware (authentication, etc.)
+│   ├── routes/             # API routes
+│   │   ├── authRoutes.ts   # Authentication routes
+│   │   └── employeeRoutes.ts # Employee management routes
+│   ├── services/           # Business logic
+│   │   └── authService.ts  # Authentication service
+│   └── index.ts            # Application entry point
+├── .env                    # Environment variables
+├── .gitignore              # Git ignore file
+├── nodemon.json            # Nodemon configuration
+├── package.json            # Project dependencies and scripts
+└── tsconfig.json           # TypeScript configuration
+```
+
+## Scripts
+
+- `npm run dev` - Run the development server with nodemon
+- `npm run build` - Build the TypeScript code
+- `npm start` - Run the compiled JavaScript code
+- `npm run prisma:generate` - Generate Prisma client
+- `npm run prisma:migrate` - Run database migrations
+
+## Security Notes
+
+- In production, disable the admin creation route
+- Use a strong JWT secret and store it securely
+- Consider adding rate limiting for login attempts
+- Employee passwords are hashed using bcrypt

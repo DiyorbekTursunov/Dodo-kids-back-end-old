@@ -1,0 +1,113 @@
+{
+  "data": [
+    {
+      "id": "inv_67890",
+      "number": 2,
+      "perentId": "inv_12345",
+      "protsessIsOver": false,
+      "departmentId": "dept_67890",
+      "department": "tikuv",
+      "totalCount": 50,
+      "createdAt": "2025-06-05T08:07:00.000Z",
+      "updatedAt": "2025-06-05T08:07:00.000Z",
+      "productGroup": {
+        "id": "pg_11111",
+        "name": "T-Shirts",
+        "isSended": false,
+        "processes": [
+          {
+            "department": { "id": "dept_67890", "name": "tikuv" },
+            "totalCount": 50,
+            "acceptCount": 50,
+            "sendedCount": 50,
+            "invalidCount": 5,
+            "residueCount": 0,
+            "status": "Yuborilgan"
+          }
+        ],
+        "products": [
+          {
+            "id": "prod_11111",
+            "name": "Cotton T-Shirt",
+            "isSended": true,
+            "processes": [
+              {
+                "department": { "id": "dept_67890", "name": "tikuv" },
+                "totalCount": 50,
+                "acceptCount": 50,
+                "sendedCount": 50,
+                "invalidCount": 5,
+                "residueCount": 0,
+                "status": "Yuborilgan"
+              }
+            ],
+            "sizes": [
+              {
+                "id": "sg_22222",
+                "size": { "id": "size_33333", "name": "Medium" },
+                "isSended": true,
+                "totalCount": 50,
+                "status": "Yuborilgan",
+                "processes": [
+                  {
+                    "department": { "id": "dept_67890", "name": "tikuv" },
+                    "totalCount": 50,
+                    "acceptCount": 50,
+                    "sendedCount": 50,
+                    "invalidCount": 5,
+                    "residueCount": 0,
+                    "status": "Yuborilgan"
+                  }
+                ],
+                
+                "colors": [
+                  {
+                    "id": "cs_22222",
+                    "totalCount": 50,
+                    "isSended": true,
+                    "status": "Yuborilgan",
+                    "color": { "id": "color_44444", "name": "Blue" },
+                    "processes": [
+                      {
+                        "department": { "id": "dept_67890", "name": "tikuv" },
+                        "totalCount": 50,
+                        "acceptCount": 50,
+                        "sendedCount": 50,
+                        "invalidCount": 5,
+                        "residueCount": 0,
+                        "status": "Yuborilgan"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "productGroupFiles": []
+      },
+      "status": [
+        {
+          "id": "status_77777",
+          "status": "Pending",
+          "date": "2025-06-05T08:07:00.000Z",
+          "protsessIsOver": false,
+          "acceptCount": 50,
+          "sendedCount": 50,
+          "invalidCount": 5,
+          "residueCount": 0,
+          "invalidReason": "Defective stitching",
+          "department": { "id": "dept_67890", "name": "tikuv" },
+          "outsourseName": "OutsourseCo",
+          "isOutsourseCompany": true
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  }
+}

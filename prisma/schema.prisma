@@ -1,0 +1,153 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// Enum for file types
+enum FileType {
+    IMAGE
+    DOCUMENT
+    OTHER
+}
+
+// Enum for process status
+enum ProcessStatus {
+    Pending
+    QabulQilingan
+    Yuborilgan
+    ToliqYuborilmagan
+}
+
+// Enum for user roles
+enum UserRole {
+    ADMIN
+    USER
+}
+
+model Product {
+    id                String             @id @default(uuid())
+    model             String             @unique // Kept unique constraint from original schema
+    createdAt         DateTime           @default(now())
+    updatedAt         DateTime           @updatedAt
+    colors            Color[]            @relation("ColorToProduct") // Updated relation name
+    sizes             Size[]             @relation("ProductToSize") // Updated relation name
+    productPacks      ProductPack[]      @relation("ProductPackProduct") // Consistent with ProductPack
+    productGroupFiles ProductGroupFile[] @relation("ProductGroupFiles")
+}
+
+model ProductPack {
+    id             String           @id @default(uuid())
+    parentId       String?          @map("parent_id")
+    processIsOver  Boolean          @default(false)
+    departmentId   String           @map("department_id")
+    departmentName String?          @map("department_name")
+    createdAt      DateTime         @default(now())
+    updatedAt      DateTime         @updatedAt
+    productId      String           @map("product_id")
+    totalCount     Int              @map("total_count")
+    parent         String? // Nullable, consistent with parentId
+    product        Product          @relation("ProductPackProduct", fields: [productId], references: [id])
+    processes      ProductProcess[] @relation("ProductPackProcesses")
+    department     Department       @relation("ProductPackDepartment", fields: [departmentId], references: [id])
+}
+
+model ProductProcess {
+    id                 String            @id @default(uuid())
+    date               DateTime          @default(now())
+    processIsOver      Boolean           @default(false) @map("process_is_over")
+    isOutsourced       Boolean           @default(false) @map("is_outsourced")
+    status             String            @default("PENDING")
+    acceptCount        Int?              @map("accept_count")
+    sentCount          Int?              @map("sent_count")
+    invalidCount       Int?              @map("invalid_count")
+    residueCount       Int?              @map("residue_count")
+    invalidReason      String?           @map("invalid_reason")
+    createdAt          DateTime          @default(now()) @map("created_at")
+    updatedAt          DateTime          @updatedAt @map("updated_at")
+    employeeId         String?           @map("employee_id")
+    departmentId       String            @map("department_id")
+    productPackId      String            @map("product_pack_id")
+    outsourseCompanyId String?           @map("outsourse_company_id")
+    employee           Employee?         @relation(fields: [employeeId], references: [id])
+    department         Department        @relation(fields: [departmentId], references: [id])
+    productPack        ProductPack       @relation("ProductPackProcesses", fields: [productPackId], references: [id])
+    outsourseCompany   OutsourseCompany? @relation(fields: [outsourseCompanyId], references: [id])
+}
+
+model Color {
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    id        String    @id @default(uuid())
+    name      String    @unique
+    products  Product[] @relation("ColorToProduct") // Matches updated Product relation
+}
+
+model Size {
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    id        String    @id @default(uuid())
+    name      String    @unique
+    products  Product[] @relation("ProductToSize") // Matches updated Product relation
+}
+
+model ProductGroupFile {
+    id        String  @id @default(uuid())
+    productId String  @map("product_id")
+    fileId    String  @map("file_id")
+    product   Product @relation("ProductGroupFiles", fields: [productId], references: [id])
+    file      File    @relation(fields: [fileId], references: [id])
+}
+
+model File {
+    id                String             @id @default(uuid())
+    filename          String
+    path              String
+    productGroupFiles ProductGroupFile[] @relation
+}
+
+model Department {
+    id           String           @id @default(uuid())
+    name         String           @unique
+    createdAt    DateTime         @default(now())
+    updatedAt    DateTime         @updatedAt
+    productPacks ProductPack[]    @relation("ProductPackDepartment")
+    processes    ProductProcess[] @relation
+    // User         User[]
+    Employee     Employee[]
+}
+
+model OutsourseCompany {
+    id        String           @id @default(uuid())
+    name      String
+    processes ProductProcess[] @relation
+}
+
+// User model
+model User {
+    id        String    @id @default(uuid())
+    login     String    @unique
+    password  String
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    role      UserRole
+    employee  Employee?
+}
+
+// Employee model
+model Employee {
+    id             String           @id @default(uuid())
+    name           String
+    userId         String           @unique
+    departmentId   String
+    createdAt      DateTime         @default(now())
+    updatedAt      DateTime         @updatedAt
+    department     Department       @relation(fields: [departmentId], references: [id])
+    user           User             @relation(fields: [userId], references: [id])
+    ProductProcess ProductProcess[]
+
+    @@index([departmentId])
+}
