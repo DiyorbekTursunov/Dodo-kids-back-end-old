@@ -1,7 +1,7 @@
 // employee.routes.ts - Complete routing setup
 import { Router } from "express";
-import * as employeeController from "@/controller/employee/employee.controller";
-import { errorHandler } from "@/service/employee/employee.service";
+import * as employeeController from "../controller/employee/employee.controller";
+import { errorHandler } from "../service/employee/employee.service";
 
 const router = Router();
 
