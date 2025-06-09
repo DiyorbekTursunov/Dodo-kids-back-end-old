@@ -76,6 +76,12 @@ model ProductProcess {
     department         Department        @relation(fields: [departmentId], references: [id])
     productPack        ProductPack       @relation("ProductPackProcesses", fields: [productPackId], references: [id])
     outsourseCompany   OutsourseCompany? @relation(fields: [outsourseCompanyId], references: [id])
+
+    senderDepartmentId   String? @default("")
+    receiverDepartmentId String? @default("")
+
+    senderDepartment   String? @default("")
+    receiverDepartment String? @default("")
 }
 
 model Color {

@@ -86,7 +86,7 @@ export const addWareHouse = async (req: Request, res: Response) => {
             employeeId: employeeId ?? null,
             acceptCount: totalCount,
             sentCount: 0,
-            residueCount: 0,
+            residueCount: totalCount,
             invalidCount,
             invalidReason,
           },

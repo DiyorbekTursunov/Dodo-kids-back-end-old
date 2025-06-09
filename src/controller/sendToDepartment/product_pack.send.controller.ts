@@ -143,6 +143,12 @@ export const sendToDepartment = async (req: Request, res: Response) => {
         invalidCount: Number(invalidCount),
         invalidReason: invalidReason || "",
         outsourseCompanyId: outsourseCompanyId,
+
+        senderDepartment: sourceProductPack.departmentName,
+        receiverDepartment: targetDepartment.name,
+
+        senderDepartmentId: sourceProductPack.departmentId,
+        receiverDepartmentId: targetDepartmentId,
       },
     });
 
@@ -177,6 +183,12 @@ export const sendToDepartment = async (req: Request, res: Response) => {
             residueCount: Number(sendCount),
             invalidCount: 0,
             invalidReason: "",
+
+            senderDepartmentId: sourceProductPack.departmentId,
+            receiverDepartmentId: targetDepartmentId,
+            
+            senderDepartment: sourceProductPack.departmentName,
+            receiverDepartment: targetDepartment.name,
           },
         },
       },
