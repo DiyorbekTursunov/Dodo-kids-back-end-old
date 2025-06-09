@@ -10,8 +10,8 @@ import { getAccesltenceProductPacks } from "../controller/acceptanceToDepartment
 import { getConsolidatedCaseTrackerStatus } from "../controller/get/getMapPage.controller";
 import { getPandingProductPacks } from "../controller/get/getPanding.controller";
 import { getProductPackById } from "../controller/get/getDetailPage.controller";
-import { getAllProductPacksById } from "@/controller/addProdcutPackDepartmentID/addProdcutPack_get_all.controller";
-import { getAllProductPacksByIdHistory } from "@/controller/addProdcutPackDepartmentIDHistory/addProdcutPack_get_all.controller";
+import { getAllProductPacksById } from "../controller/addProdcutPackDepartmentID/addProdcutPack_get_all.controller";
+import { getAllProductPacksByIdHistory } from "../controller/addProdcutPackDepartmentIDHistory/addProdcutPack_get_all.controller";
 
 
 const router = express.Router();
