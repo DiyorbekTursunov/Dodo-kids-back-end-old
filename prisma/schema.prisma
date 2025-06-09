@@ -71,7 +71,7 @@ model ProductProcess {
     employeeId         String?           @map("employee_id")
     departmentId       String            @map("department_id")
     productPackId      String            @map("product_pack_id")
-    outsourseCompanyId String?           @map("outsourse_company_id")
+    outsourseCompanyId String?           @default("") @map("outsourse_company_id")
     employee           Employee?         @relation(fields: [employeeId], references: [id])
     department         Department        @relation(fields: [departmentId], references: [id])
     productPack        ProductPack       @relation("ProductPackProcesses", fields: [productPackId], references: [id])

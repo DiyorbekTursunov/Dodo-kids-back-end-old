@@ -213,16 +213,16 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       });
     }
 
-    if (
-      err instanceof Prisma.PrismaClientKnownRequestError &&
-      err.code === "P2003"
-    ) {
-      const meta = err.meta || {};
-      return res.status(400).json({
-        error: "Foreign key constraint violation",
-        details: `Invalid reference: ${JSON.stringify(meta)}`,
-      });
-    }
+    // if (
+    //   err instanceof Prisma.PrismaClientKnownRequestError &&
+    //   err.code === "P2003"
+    // ) {
+    //   const meta = err.meta || {};
+    //   return res.status(400).json({
+    //     error: "Foreign key constraint violation",
+    //     details: `Invalid reference: ${JSON.stringify(meta)}`,
+    //   });
+    // }
 
     console.error("Error sending product to department:", err);
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
