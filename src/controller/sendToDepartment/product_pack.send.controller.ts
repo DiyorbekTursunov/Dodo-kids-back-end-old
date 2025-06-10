@@ -14,7 +14,6 @@ const sendToDepartmentSchema = z.object({
   employeeId: z.string().uuid(),
   outsourseCompanyId: z
     .string()
-    .uuid()
     .nullable()
     .optional()
     .transform((val) => (val === "" ? null : val)), // Convert empty string to null
