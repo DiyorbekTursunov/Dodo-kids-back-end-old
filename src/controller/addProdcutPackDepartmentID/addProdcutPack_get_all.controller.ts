@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 // Input validation schema for departmentId (path parameter)
 const departmentIdSchema = z.object({
-  departmentId: z.string().uuid(), // Assuming departmentId is a UUID string
+  departmentId: z.string().uuid(),
 });
 
 // Input validation schema for pagination (query parameters)
@@ -29,7 +29,7 @@ export const getAllProductPacksById = async (req: Request, res: Response) => {
 
     // Define the where clause for filtering
     const whereClause = {
-      departmentId: departmentId, // Now a string (UUID)
+      departmentId,
       processIsOver: false,
     };
 
@@ -51,7 +51,11 @@ export const getAllProductPacksById = async (req: Request, res: Response) => {
               sizes: true,
             },
           },
-          processes: true,
+          processes: {
+            orderBy: {
+              date: "desc", // Ensure the latest process comes first
+            },
+          },
           department: true,
         },
       }),
@@ -60,12 +64,18 @@ export const getAllProductPacksById = async (req: Request, res: Response) => {
       }),
     ]);
 
+    // Format the response to include latestStatus
+    const formattedPacks = productPacks.map((pack) => ({
+      ...pack,
+      latestStatus: pack.processes[0] || null, // Latest process or null if none
+    }));
+
     // Calculate total pages
     const totalPages = Math.ceil(totalCount / pageSize);
 
     // Send response
     res.status(200).json({
-      data: productPacks,
+      data: formattedPacks,
       pagination: {
         page,
         pageSize,
