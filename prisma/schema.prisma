@@ -61,6 +61,7 @@ model ProductProcess {
     processIsOver      Boolean     @default(false) @map("process_is_over")
     isOutsourced       Boolean     @default(false) @map("is_outsourced")
     status             String      @default("PENDING")
+    totalCount         Int?
     acceptCount        Int?        @map("accept_count")
     sentCount          Int?        @map("sent_count")
     invalidCount       Int?        @map("invalid_count")
@@ -71,16 +72,16 @@ model ProductProcess {
     employeeId         String?     @map("employee_id")
     departmentId       String      @map("department_id")
     productPackId      String      @map("product_pack_id")
-    outsourseCompanyId String?     // REMOVED @default("") - this was causing the issue
+    outsourseCompanyId String? // REMOVED @default("") - this was causing the issue
     employee           Employee?   @relation(fields: [employeeId], references: [id])
     department         Department  @relation(fields: [departmentId], references: [id])
     productPack        ProductPack @relation("ProductPackProcesses", fields: [productPackId], references: [id])
 
-    senderDepartmentId   String?     // REMOVED @default("") - empty strings are not ideal
-    receiverDepartmentId String?     // REMOVED @default("") - empty strings are not ideal
+    senderDepartmentId   String? // REMOVED @default("") - empty strings are not ideal
+    receiverDepartmentId String? // REMOVED @default("") - empty strings are not ideal
 
-    senderDepartment   String?       // REMOVED @default("") - empty strings are not ideal
-    receiverDepartment String?       // REMOVED @default("") - empty strings are not ideal
+    senderDepartment   String? // REMOVED @default("") - empty strings are not ideal
+    receiverDepartment String? // REMOVED @default("") - empty strings are not ideal
 
     OutsourseCompany OutsourseCompany? @relation(fields: [outsourseCompanyId], references: [id])
 }

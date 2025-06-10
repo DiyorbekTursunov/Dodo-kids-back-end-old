@@ -81,6 +81,7 @@ export const acceptProductPack = async (req: Request, res: Response) => {
       });
     }
 
+    const oldTotalCount = pendingStatus.totalCount ?? 0;
     // Calculate acceptCount automatically
     const acceptCount = totalCount - invalidCountNum;
 
@@ -92,7 +93,7 @@ export const acceptProductPack = async (req: Request, res: Response) => {
       });
 
       // 2. Since we're accepting all non-invalid items, residueCount is always 0
-      const residueCount = totalCount - acceptCount;
+      //   const residueCount = totalCount - acceptCount;
 
       // 3. Create new accepted status
       const newStatus = await prismaClient.productProcess.create({
@@ -104,7 +105,7 @@ export const acceptProductPack = async (req: Request, res: Response) => {
           employeeId,
           acceptCount,
           sentCount: 0,
-          residueCount,
+          residueCount: oldTotalCount - acceptCount,
           invalidCount: invalidCountNum,
           invalidReason: invalidReason || "",
         },

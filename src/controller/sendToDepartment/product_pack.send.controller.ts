@@ -187,6 +187,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
         departmentId: targetDepartmentId,
         employeeId,
         acceptCount: 0,
+        totalCount: totalCount,
         sentCount: Number(sendCount),
         residueCount: Number(sendCount),
         invalidCount: 0,

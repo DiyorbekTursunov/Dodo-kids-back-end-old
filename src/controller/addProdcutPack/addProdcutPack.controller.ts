@@ -34,7 +34,12 @@ export const addWareHouse = async (req: Request, res: Response) => {
     } = validatedData;
 
     // Log input IDs for debugging
-    console.log("Input IDs:", { productId, departmentId, employeeId, outsourseCompanyId });
+    console.log("Input IDs:", {
+      productId,
+      departmentId,
+      employeeId,
+      outsourseCompanyId,
+    });
 
     // Check if product exists
     const product = await prisma.product.findUnique({
@@ -42,7 +47,9 @@ export const addWareHouse = async (req: Request, res: Response) => {
     });
 
     if (!product) {
-      return res.status(404).json({ error: `Product not found for ID: ${productId}` });
+      return res
+        .status(404)
+        .json({ error: `Product not found for ID: ${productId}` });
     }
 
     // Check if department exists
@@ -51,7 +58,9 @@ export const addWareHouse = async (req: Request, res: Response) => {
     });
 
     if (!department) {
-      return res.status(404).json({ error: `Department not found for ID: ${departmentId}` });
+      return res
+        .status(404)
+        .json({ error: `Department not found for ID: ${departmentId}` });
     }
 
     // Check if employee exists
@@ -62,7 +71,9 @@ export const addWareHouse = async (req: Request, res: Response) => {
     console.log("Employee check:", employee ? "exists" : "does not exist");
 
     if (!employee) {
-      return res.status(404).json({ error: `Employee not found for ID: ${employeeId}` });
+      return res
+        .status(404)
+        .json({ error: `Employee not found for ID: ${employeeId}` });
     }
 
     // Validate outsourse company if provided
@@ -73,7 +84,7 @@ export const addWareHouse = async (req: Request, res: Response) => {
 
       if (!outsourseCompany) {
         return res.status(404).json({
-          error: `Outsourse Company not found for ID: ${outsourseCompanyId}`
+          error: `Outsourse Company not found for ID: ${outsourseCompanyId}`,
         });
       }
     }
@@ -102,6 +113,7 @@ export const addWareHouse = async (req: Request, res: Response) => {
             acceptCount: totalCount,
             sentCount: 0,
             residueCount: totalCount,
+            totalCount: totalCount,
             invalidCount,
             invalidReason,
             // Explicitly set outsourseCompanyId to null if not provided
@@ -130,7 +142,10 @@ export const addWareHouse = async (req: Request, res: Response) => {
       });
     }
 
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2003"
+    ) {
       const meta = err.meta || {};
       return res.status(400).json({
         error: "Foreign key constraint violation",
