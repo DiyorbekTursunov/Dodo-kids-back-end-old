@@ -12,7 +12,12 @@ const sendToDepartmentSchema = z.object({
   invalidCount: z.number().int().nonnegative().optional().default(0),
   invalidReason: z.string().optional().default(""),
   employeeId: z.string().uuid(),
-  outsourseCompanyId: z.string().optional().nullable(),
+  outsourseCompanyId: z
+    .string()
+    .uuid()
+    .nullable()
+    .optional()
+    .transform((val) => (val === "" ? null : val)), // Convert empty string to null
 });
 
 // Send Product Pack to another department
@@ -28,7 +33,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       invalidCount,
       invalidReason,
       employeeId,
-      outsourseCompanyId,
+      outsourseCompanyId = null,
     } = validatedData;
 
     // Log input for debugging
@@ -73,13 +78,12 @@ export const sendToDepartment = async (req: Request, res: Response) => {
     }
 
     // Validate outsourse company if provided
-    let actualOutsourseCompanyName = null;
     if (outsourseCompanyId) {
-      actualOutsourseCompanyName = await prisma.outsourseCompany.findUnique({
+      const outsourseCompany = await prisma.outsourseCompany.findUnique({
         where: { id: outsourseCompanyId },
       });
 
-      if (!actualOutsourseCompanyName) {
+      if (!outsourseCompany) {
         return res.status(404).json({
           error: `Outsourse Company not found for ID: ${outsourseCompanyId}`,
         });
@@ -160,7 +164,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
       receiverDepartment: targetDepartment.name,
       senderDepartmentId: sourceProductPack.departmentId,
       receiverDepartmentId: targetDepartmentId,
-      outsourseCompanyId: outsourseCompanyId, // Use foreign key directly
+      outsourseCompanyId, // Already validated or null
     };
 
     // Create a new status for the source product pack
@@ -196,7 +200,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
         receiverDepartmentId: targetDepartmentId,
         senderDepartment: sourceProductPack.departmentName,
         receiverDepartment: targetDepartment.name,
-        outsourseCompanyId: outsourseCompanyId, // Use foreign key directly
+        outsourseCompanyId, // Already validated or null
       };
 
     // Create a new ProductPack for the target department
