@@ -6,14 +6,17 @@ const prisma = new PrismaClient();
 
 const searchSchema = z.object({
   query: z.string().optional().default(""),
-  colorName: z.string().optional(),
-  sizeName: z.string().optional(),
+  productId: z.string().uuid().optional(),
   departmentId: z.string().optional(),
   isOutsourced: z
     .enum(["true", "false"])
     .transform((val) => val === "true")
     .optional(),
   status: z.enum(["Pending"]).optional(),
+  processIsOver: z
+    .enum(["true", "false"])
+    .transform((val) => val === "true")
+    .optional(),
   sortBy: z.string().default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
   page: z.coerce.number().int().min(1).default(1),
@@ -24,11 +27,11 @@ export const searchProductsByModel = async (req: Request, res: Response) => {
   try {
     const {
       query,
-      colorName,
-      sizeName,
+      productId,
       departmentId,
       isOutsourced,
       status,
+      processIsOver,
       sortBy,
       sortOrder,
       page,
@@ -38,32 +41,18 @@ export const searchProductsByModel = async (req: Request, res: Response) => {
     const skip = (page - 1) * pageSize;
 
     const where: Prisma.ProductPackWhereInput = {
-      processIsOver: false,
-      product: {
-        model: {
-          contains: query,
-          mode: "insensitive" as Prisma.QueryMode,
-        },
-        ...(colorName
-          ? {
-              colors: {
-                some: { name: { contains: colorName, mode: "insensitive" } },
-              },
-            }
-          : {}),
-        ...(sizeName
-          ? {
-              sizes: {
-                some: { name: { contains: sizeName, mode: "insensitive" } },
-              },
-            }
-          : {}),
-      },
+      ...(processIsOver !== undefined ? { processIsOver } : {}),
+      ...(productId ? { productId } : {}),
+      ...(query
+        ? {
+            product: {
+              model: { contains: query, mode: "insensitive" as Prisma.QueryMode },
+            },
+          }
+        : {}),
       ...(departmentId ? { departmentId } : {}),
       ...(isOutsourced ? { processes: { some: { isOutsourced: true } } } : {}),
-      ...(status === "Pending"
-        ? { processes: { some: { status: "Pending" } } }
-        : {}),
+      ...(status === "Pending" ? { processes: { some: { status: "Pending" } } } : {}),
     };
 
     const [productPacks, totalCount] = await Promise.all([
@@ -93,6 +82,7 @@ export const searchProductsByModel = async (req: Request, res: Response) => {
               residueCount: true,
               updatedAt: true,
             },
+            orderBy: { updatedAt: "desc" },
           },
           department: { select: { id: true, name: true } },
         },
@@ -102,17 +92,23 @@ export const searchProductsByModel = async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
+    const formattedPacks = productPacks.map((pack) => ({
+      ...pack,
+      latestStatus: pack.processes[0] || null,
+      processes: undefined,
+    }));
+
     if (productPacks.length === 0) {
       return res.status(200).json({
         data: [],
         pagination: { page, pageSize, totalCount, totalPages },
         message:
-          "No product packs found. Verify that search terms (query, colorName, sizeName, departmentId, status=Pending) match existing data. Ensure ProductProcess records with status 'Pending' exist.",
+          "No product packs found. Verify that search terms (query, productId, departmentId, status=Pending, processIsOver) match existing data. Ensure ProductProcess records with status 'Pending' exist if status is specified. Check if 'query' matches product model names (e.g., 'Futbolka').",
       });
     }
 
     return res.status(200).json({
-      data: productPacks,
+      data: formattedPacks,
       pagination: { page, pageSize, totalCount, totalPages },
     });
   } catch (err) {

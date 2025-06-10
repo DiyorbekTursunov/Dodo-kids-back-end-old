@@ -8,12 +8,19 @@ const filterSchema = z.object({
   query: z.string().optional().default(""),
   colorName: z.string().optional(),
   sizeName: z.string().optional(),
+  colorId: z.string().uuid().optional(),
+  sizeId: z.string().uuid().optional(),
+  productId: z.string().uuid().optional(),
   departmentId: z.string().optional(),
   isOutsourced: z
     .enum(["true", "false"])
     .transform((val) => val === "true")
     .optional(),
   status: z.enum(["Pending"]).optional(),
+  processIsOver: z
+    .enum(["true", "false"])
+    .transform((val) => val === "true")
+    .optional(),
   sortBy: z.string().default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
   startDate: z.string().optional(),
@@ -28,9 +35,13 @@ export const getFilteredProductPacks = async (req: Request, res: Response) => {
       query,
       colorName,
       sizeName,
+      colorId,
+      sizeId,
+      productId,
       departmentId,
       isOutsourced,
       status,
+      processIsOver,
       sortBy,
       sortOrder,
       startDate,
@@ -42,40 +53,28 @@ export const getFilteredProductPacks = async (req: Request, res: Response) => {
     const skip = (page - 1) * pageSize;
 
     const where: Prisma.ProductPackWhereInput = {
-      processIsOver: false,
-      ...(query
+      ...(processIsOver !== undefined ? { processIsOver } : {}),
+      ...(productId ? { productId } : {}),
+      ...(query || colorName || colorId || sizeName || sizeId
         ? {
             product: {
-              model: {
-                contains: query,
-                mode: "insensitive" as Prisma.QueryMode,
-              },
-            },
-          }
-        : {}),
-      ...(colorName
-        ? {
-            product: {
-              colors: {
-                some: { name: { contains: colorName, mode: "insensitive" } },
-              },
-            },
-          }
-        : {}),
-      ...(sizeName
-        ? {
-            product: {
-              sizes: {
-                some: { name: { contains: sizeName, mode: "insensitive" } },
-              },
+              ...(query
+                ? { model: { contains: query, mode: "insensitive" as Prisma.QueryMode } }
+                : {}),
+              ...(colorName
+                ? { colors: { some: { name: { contains: colorName, mode: "insensitive" } } } }
+                : {}),
+              ...(colorId ? { colors: { some: { id: colorId } } } : {}),
+              ...(sizeName
+                ? { sizes: { some: { name: { contains: sizeName, mode: "insensitive" } } } }
+                : {}),
+              ...(sizeId ? { sizes: { some: { id: sizeId } } } : {}),
             },
           }
         : {}),
       ...(departmentId ? { departmentId } : {}),
       ...(isOutsourced ? { processes: { some: { isOutsourced: true } } } : {}),
-      ...(status === "Pending"
-        ? { processes: { some: { status: "Pending" } } }
-        : {}),
+      ...(status === "Pending" ? { processes: { some: { status: "Pending" } } } : {}),
       ...(startDate || endDate
         ? {
             createdAt: {
@@ -113,6 +112,7 @@ export const getFilteredProductPacks = async (req: Request, res: Response) => {
               residueCount: true,
               updatedAt: true,
             },
+            orderBy: { updatedAt: "desc" }, // Ensure latest process is first
           },
           department: { select: { id: true, name: true } },
         },
@@ -122,17 +122,24 @@ export const getFilteredProductPacks = async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
+    // Format response to include latestStatus and exclude processes array
+    const formattedPacks = productPacks.map((pack) => ({
+      ...pack,
+      latestStatus: pack.processes[0] || null,
+      processes: undefined,
+    }));
+
     if (productPacks.length === 0) {
       return res.status(200).json({
         data: [],
         pagination: { page, pageSize, totalCount, totalPages },
         message:
-          "No product packs found. Verify that search terms (query, colorName, sizeName, departmentId, status=Pending) match existing data. Ensure ProductProcess records with status 'Pending' exist.",
+          "No product packs found. Verify that search terms (query, colorName, sizeName, colorId, sizeId, productId, departmentId, status=Pending, processIsOver) match existing data. Ensure ProductProcess records with status 'Pending' exist if status is specified.",
       });
     }
 
     return res.status(200).json({
-      data: productPacks,
+      data: formattedPacks,
       pagination: { page, pageSize, totalCount, totalPages },
     });
   } catch (err) {
