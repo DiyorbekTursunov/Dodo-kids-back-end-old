@@ -180,22 +180,23 @@ export const sendToDepartment = async (req: Request, res: Response) => {
     const parentId = sourceProductPack.parentId || sourceProductPack.id;
 
     // Prepare base data for new product pack process
-    const newProcessData: Prisma.ProductProcessUncheckedCreateWithoutProductPackInput = {
-      processIsOver: false,
-      status: "Pending",
-      departmentId: targetDepartmentId,
-      employeeId,
-      acceptCount: 0,
-      sentCount: 0,
-      residueCount: Number(sendCount),
-      invalidCount: 0,
-      invalidReason: "",
-      senderDepartmentId: sourceProductPack.departmentId,
-      receiverDepartmentId: targetDepartmentId,
-      senderDepartment: sourceProductPack.departmentName,
-      receiverDepartment: targetDepartment.name,
-      outsourseCompanyId: outsourseCompanyId, // Use foreign key directly
-    };
+    const newProcessData: Prisma.ProductProcessUncheckedCreateWithoutProductPackInput =
+      {
+        processIsOver: false,
+        status: "Pending",
+        departmentId: targetDepartmentId,
+        employeeId,
+        acceptCount: 0,
+        sentCount: Number(sendCount),
+        residueCount: Number(sendCount),
+        invalidCount: 0,
+        invalidReason: "",
+        senderDepartmentId: sourceProductPack.departmentId,
+        receiverDepartmentId: targetDepartmentId,
+        senderDepartment: sourceProductPack.departmentName,
+        receiverDepartment: targetDepartment.name,
+        outsourseCompanyId: outsourseCompanyId, // Use foreign key directly
+      };
 
     // Create a new ProductPack for the target department
     const newProductPack = await prisma.productPack.create({

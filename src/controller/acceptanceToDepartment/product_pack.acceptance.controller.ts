@@ -20,8 +20,14 @@ export const acceptProductPack = async (req: Request, res: Response) => {
 
   // Validate invalidCount to ensure it's a non-negative integer
   const invalidCountNum = Number(invalidCount);
-  if (isNaN(invalidCountNum) || !Number.isInteger(invalidCountNum) || invalidCountNum < 0) {
-    return res.status(400).json({ error: "Invalid count must be a non-negative integer" });
+  if (
+    isNaN(invalidCountNum) ||
+    !Number.isInteger(invalidCountNum) ||
+    invalidCountNum < 0
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Invalid count must be a non-negative integer" });
   }
 
   try {
@@ -64,7 +70,7 @@ export const acceptProductPack = async (req: Request, res: Response) => {
     // Check if department is "ombor" - if so, we will end the process
     const isQadoqlashDepartment =
       employee.department.name.toLowerCase() === "ombor" ||
-      (productPack.departmentName?.toLowerCase() === "ombor");
+      productPack.departmentName?.toLowerCase() === "ombor";
 
     // Validate that invalidCount doesn't exceed totalCount
     const totalCount = productPack.totalCount;
@@ -86,7 +92,7 @@ export const acceptProductPack = async (req: Request, res: Response) => {
       });
 
       // 2. Since we're accepting all non-invalid items, residueCount is always 0
-      const residueCount = 0;
+      const residueCount = totalCount - acceptCount;
 
       // 3. Create new accepted status
       const newStatus = await prismaClient.productProcess.create({
@@ -132,11 +138,9 @@ export const acceptProductPack = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error("Error accepting product pack:", err);
-    res
-      .status(500)
-      .json({
-        error: "Internal server error",
-        details: (err as Error).message,
-      });
+    res.status(500).json({
+      error: "Internal server error",
+      details: (err as Error).message,
+    });
   }
 };
