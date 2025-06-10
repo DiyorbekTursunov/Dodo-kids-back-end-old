@@ -1,333 +1,142 @@
 import { Request, Response } from "express";
-import { PrismaClient, ProcessStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-const departmentOrderMap: Record<string, { logicalId: number; allowedNext: string[] }> = {
-  bichuv: { logicalId: 1, allowedNext: ["tasnif"] },
-  tasnif: { logicalId: 2, allowedNext: ["pechat", "pechatusluga"] },
-  pechat: { logicalId: 3, allowedNext: ["vishivka", "vishivkausluga"] },
-  pechatusluga: { logicalId: 3, allowedNext: ["vishivka", "vishivkausluga"] },
-  vishivka: { logicalId: 4, allowedNext: ["tikuv", "tikuvusluga"] },
-  vishivkausluga: { logicalId: 4, allowedNext: ["tikuv", "tikuvusluga"] },
-  tikuv: { logicalId: 5, allowedNext: ["chistka"] },
-  tikuvusluga: { logicalId: 5, allowedNext: ["chistka"] },
-  chistka: { logicalId: 6, allowedNext: ["kontrol"] },
-  kontrol: { logicalId: 7, allowedNext: ["dazmol"] },
-  dazmol: { logicalId: 8, allowedNext: ["upakovka"] },
-  upakovka: { logicalId: 9, allowedNext: ["ombor"] },
-  ombor: { logicalId: 10, allowedNext: [] },
-};
+// Accept a product pack that was sent from another department
+export const acceptProductPack = async (req: Request, res: Response) => {
+  const {
+    productPackId,
+    invalidCount = 0,
+    invalidReason = "",
+    employeeId,
+  } = req.body;
 
-const normalizeDepartment = (name: string): string => {
-  const map: Record<string, string> = {
-    autsorspechat: "pechat",
-    autsorstikuv: "tikuv",
-    pechatusluga: "pechatusluga",
-    vishivkausluga: "vishivkausluga",
-    tikuvusluga: "tikuvusluga",
-  };
-  return map[name.toLowerCase()] || name.toLowerCase();
-};
+  if (!productPackId || !employeeId) {
+    return res
+      .status(400)
+      .json({ error: "Required fields are missing or invalid" });
+  }
 
-// Interfaces (unchanged)
-interface Process {
-  id: string;
-  status: ProcessStatus;
-  acceptCount: number | null;
-  sentCount: number | null;
-  invalidCount: number | null;
-  residueCount: number | null;
-  invalidReason: string | null;
-  department: { id: string; name: string };
-  date: Date; // Added for clarity
-}
+  // Validate invalidCount to ensure it's a non-negative integer
+  const invalidCountNum = Number(invalidCount);
+  if (isNaN(invalidCountNum) || !Number.isInteger(invalidCountNum) || invalidCountNum < 0) {
+    return res.status(400).json({ error: "Invalid count must be a non-negative integer" });
+  }
 
-interface ProductFile {
-  id: string;
-  file: {
-    id: string;
-    filename: string;
-    path: string;
-  };
-}
-
-interface Status {
-  id: string;
-  status: ProcessStatus;
-  date: Date;
-  processIsOver: boolean;
-  acceptCount: number | null;
-  sentCount: number | null;
-  invalidCount: number | null;
-  residueCount: number | null;
-  invalidReason: string | null;
-  department: { id: string; name: string };
-  outsourseCompany: { id: string; name: string } | null;
-  isOutsourced: boolean;
-}
-
-interface Product {
-  id: string;
-  parentId: string | null;
-  processIsOver: boolean;
-  departmentId: string;
-  department: { id: string; name: string };
-  totalCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-  product: {
-    id: string;
-    model: string;
-    productGroupFiles: ProductFile[];
-  };
-  processes: Process[];
-  statuses: Status[];
-}
-
-interface TransformedProcess {
-  department: { id: string; name: string };
-  acceptCount: number | null;
-  sentCount: number | null;
-  invalidCount: number | null;
-  residueCount: number | null;
-  status: ProcessStatus;
-}
-
-interface TransformedProductFile {
-  id: string;
-  file: {
-    id: string;
-    filename: string;
-    path: string;
-  };
-}
-
-interface TransformedProductData {
-  id: string;
-  model: string;
-  processes: TransformedProcess[];
-  productGroupFiles: TransformedProductFile[];
-}
-
-interface TransformedStatus {
-  id: string;
-  status: ProcessStatus;
-  date: string;
-  processIsOver: boolean;
-  acceptCount: number | null;
-  sentCount: number | null;
-  invalidCount: number | null;
-  residueCount: number | null;
-  invalidReason: string | null;
-  department: { id: string; name: string };
-  outsourseName: string | null;
-  isOutsourced: boolean;
-}
-
-interface TransformedProduct {
-  id: string;
-  name: string | null;
-  parentId: string | null;
-  processIsOver: boolean;
-  departmentId: string;
-  department: string;
-  totalCount: number;
-  createdAt: string;
-  updatedAt: string;
-  product: TransformedProductData;
-  statuses: TransformedStatus[];
-  logicalId: number;
-}
-
-// Transformation function (unchanged)
-const transformProduct = (product: Product): TransformedProduct => {
-  const normalizedDept = normalizeDepartment(product.department.name);
-  const logicalId = departmentOrderMap[normalizedDept]?.logicalId || 0;
-
-  return {
-    id: product.id,
-    name: product.product.model,
-    parentId: product.parentId,
-    processIsOver: product.processIsOver,
-    departmentId: product.departmentId,
-    department: product.department.name,
-    totalCount: product.totalCount,
-    createdAt: product.createdAt.toISOString(),
-    updatedAt: product.updatedAt.toISOString(),
-    product: {
-      id: product.product.id,
-      model: product.product.model,
-      processes: product.processes.map((process) => ({
-        department: { id: process.department.id, name: process.department.name },
-        acceptCount: process.acceptCount,
-        sentCount: process.sentCount,
-        invalidCount: process.invalidCount,
-        residueCount: process.residueCount,
-        status: process.status,
-      })),
-      productGroupFiles: product.product.productGroupFiles.map((file) => ({
-        id: file.id,
-        file: {
-          id: file.file.id,
-          filename: file.file.filename,
-          path: file.file.path,
-        },
-      })),
-    },
-    statuses: product.statuses.map((status) => ({
-      id: status.id,
-      status: status.status,
-      date: status.date.toISOString(),
-      processIsOver: status.processIsOver,
-      acceptCount: status.acceptCount,
-      sentCount: status.sentCount,
-      invalidCount: status.invalidCount,
-      residueCount: status.residueCount,
-      invalidReason: status.invalidReason,
-      department: { id: status.department.id, name: status.department.name },
-      outsourseName: status.outsourseCompany?.name || null,
-      isOutsourced: status.isOutsourced,
-    })),
-    logicalId,
-  };
-};
-
-export const getConsolidatedCaseTrackerStatus = async (
-  req: Request,
-  res: Response
-) => {
   try {
-    // Fetch ProductPacks with necessary relations
-    const productPacks = await prisma.productPack.findMany({
+    // Find the product pack with its pending status
+    const productPack = await prisma.productPack.findUnique({
+      where: { id: productPackId },
       include: {
-        department: true,
-        processes: {
-          include: {
-            department: true,
-            OutsourseCompany: true,
-          },
-          orderBy: { date: "desc" },
-        },
-        product: {
-          include: {
-            productGroupFiles: {
-              include: { file: true },
-            },
-          },
-        },
+        processes: true,
+        product: true,
       },
     });
 
-    // Validate and cast status to ProcessStatus
-    const isValidProcessStatus = (status: string): status is ProcessStatus => {
-      return Object.values(ProcessStatus).includes(status as ProcessStatus);
-    };
+    if (!productPack) {
+      return res.status(404).json({ error: "Product pack not found" });
+    }
 
-    // Helper to map ProductPack to Product interface, selecting only the latest process
-    const mapProductPackToProduct = (pack: typeof productPacks[number]): Product => {
-      // Find the latest process based on date
-      const latestProcess = pack.processes.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
-
-      return {
-        id: pack.id,
-        parentId: pack.parentId,
-        processIsOver: pack.processIsOver,
-        departmentId: pack.departmentId,
-        department: pack.department,
-        totalCount: pack.totalCount,
-        createdAt: pack.createdAt,
-        updatedAt: pack.updatedAt,
-        product: {
-          id: pack.product.id,
-          model: pack.product.model,
-          productGroupFiles: pack.product.productGroupFiles,
-        },
-        processes: latestProcess ? [{
-          id: latestProcess.id,
-          status: isValidProcessStatus(latestProcess.status) ? latestProcess.status : ProcessStatus.QabulQilingan,
-          acceptCount: latestProcess.acceptCount,
-          sentCount: latestProcess.sentCount,
-          invalidCount: latestProcess.invalidCount,
-          residueCount: latestProcess.residueCount,
-          invalidReason: latestProcess.invalidReason,
-          department: latestProcess.department,
-          date: latestProcess.date,
-        }] : [],
-        statuses: latestProcess ? [{
-          id: latestProcess.id,
-          status: isValidProcessStatus(latestProcess.status) ? latestProcess.status : ProcessStatus.QabulQilingan,
-          date: latestProcess.date,
-          processIsOver: latestProcess.processIsOver,
-          acceptCount: latestProcess.acceptCount,
-          sentCount: latestProcess.sentCount,
-          invalidCount: latestProcess.invalidCount,
-          residueCount: latestProcess.residueCount,
-          invalidReason: latestProcess.invalidReason,
-          department: latestProcess.department,
-          outsourseCompany: latestProcess.OutsourseCompany ?? null,
-          isOutsourced: latestProcess.isOutsourced,
-        }] : [],
-      };
-    };
-
-    // Transform and format packs
-    const formattedPacks: TransformedProduct[] = productPacks.map((pack) =>
-      transformProduct(mapProductPackToProduct(pack))
+    // Find the pending status
+    const pendingStatus = productPack.processes.find(
+      (status) => status.status === "Pending"
     );
 
-    // Consolidate packs by parentId and department
-    const consolidatedMap: Map<string, TransformedProduct> = new Map();
+    if (!pendingStatus) {
+      return res
+        .status(400)
+        .json({ error: "Product pack does not have a pending status" });
+    }
 
-    formattedPacks.forEach((pack) => {
-      const key = `${pack.parentId || pack.id}-${normalizeDepartment(pack.department)}`;
-      if (!consolidatedMap.has(key)) {
-        consolidatedMap.set(key, pack);
-      } else {
-        const existing = consolidatedMap.get(key)!;
-        const latestStatusDate = pack.statuses[0]?.date || "0";
-        const existingStatusDate = existing.statuses[0]?.date || "0";
-        if (new Date(latestStatusDate) > new Date(existingStatusDate)) {
-          consolidatedMap.set(key, pack);
-        }
-      }
+    // Validate the employee exists
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      include: {
+        department: true,
+      },
     });
 
-    // Convert to array, sort by logicalId
-    const consolidatedPacksArray: TransformedProduct[] = Array.from(
-      consolidatedMap.values()
-    ).sort((a, b) => a.logicalId - b.logicalId);
+    if (!employee) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
 
-    // Group by parentId
-    const groupedByParentId: { [parentId: string]: TransformedProduct[] } = {};
+    // Check if department is "ombor" - if so, we will end the process
+    const isQadoqlashDepartment =
+      employee.department.name.toLowerCase() === "ombor" ||
+      (productPack.departmentName?.toLowerCase() === "ombor");
 
-    consolidatedPacksArray.forEach((pack) => {
-      const parentId = pack.parentId || pack.id;
-      if (!groupedByParentId[parentId]) {
-        groupedByParentId[parentId] = [];
-      }
-      groupedByParentId[parentId].push(pack);
+    // Validate that invalidCount doesn't exceed totalCount
+    const totalCount = productPack.totalCount;
+    if (invalidCountNum > totalCount) {
+      return res.status(400).json({
+        error: "Invalid count cannot exceed total count",
+        total: totalCount,
+      });
+    }
+
+    // Calculate acceptCount automatically
+    const acceptCount = totalCount - invalidCountNum;
+
+    // Start a transaction to ensure data consistency
+    const result = await prisma.$transaction(async (prismaClient) => {
+      // 1. Delete the pending status
+      await prismaClient.productProcess.delete({
+        where: { id: pendingStatus.id },
+      });
+
+      // 2. Since we're accepting all non-invalid items, residueCount is always 0
+      const residueCount = 0;
+
+      // 3. Create new accepted status
+      const newStatus = await prismaClient.productProcess.create({
+        data: {
+          processIsOver: isQadoqlashDepartment,
+          status: "QabulQilingan",
+          departmentId: productPack.departmentId,
+          productPackId: productPackId,
+          employeeId,
+          acceptCount,
+          sentCount: 0,
+          residueCount,
+          invalidCount: invalidCountNum,
+          invalidReason: invalidReason || "",
+        },
+      });
+
+      // 4. Update the product pack
+      await prismaClient.productPack.update({
+        where: { id: productPackId },
+        data: { processIsOver: isQadoqlashDepartment },
+      });
+
+      return {
+        newStatus,
+        pendingStatusId: pendingStatus.id,
+        isComplete: isQadoqlashDepartment,
+      };
     });
 
-    // Format response
-    const responseData = Object.entries(groupedByParentId).map(([parentId, data]) => ({
-      parentId,
-      data,
-    }));
-
-    return res.status(200).json({
-      success: true,
-      count: responseData.length,
-      data: responseData,
+    // Return success response
+    res.status(200).json({
+      message: `Successfully accepted ${acceptCount} items${
+        invalidCountNum > 0 ? ` and marked ${invalidCountNum} as invalid` : ""
+      }${
+        result.isComplete
+          ? ". Process completed as this is the final ombor department."
+          : ""
+      }`,
+      deletedPendingStatus: result.pendingStatusId,
+      newStatus: result.newStatus,
+      isComplete: result.isComplete,
     });
-  } catch (error) {
-    console.error("Error fetching consolidated status:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch consolidated status",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error("Error accepting product pack:", err);
+    res
+      .status(500)
+      .json({
+        error: "Internal server error",
+        details: (err as Error).message,
+      });
   }
 };
