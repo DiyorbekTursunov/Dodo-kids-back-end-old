@@ -12,7 +12,7 @@ const sendToDepartmentSchema = z.object({
   invalidCount: z.number().int().nonnegative().optional().default(0),
   invalidReason: z.string().optional().default(""),
   employeeId: z.string().uuid(),
-  outsourseCompanyId: z.string().uuid().optional().nullable(),
+  outsourseCompanyId: z.string().optional().nullable(),
 });
 
 // Send Product Pack to another department
