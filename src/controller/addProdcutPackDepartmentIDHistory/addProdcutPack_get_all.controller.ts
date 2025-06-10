@@ -16,7 +16,10 @@ const paginationSchema = z.object({
 });
 
 // Get all Product Packs by departmentId with pagination and filtering
-export const getAllProductPacksByIdHistory = async (req: Request, res: Response) => {
+export const getAllProductPacksByIdHistory = async (
+  req: Request,
+  res: Response
+) => {
   try {
     // Validate departmentId from path parameters
     const { departmentId } = departmentIdSchema.parse(req.params);
@@ -42,7 +45,13 @@ export const getAllProductPacksByIdHistory = async (req: Request, res: Response)
         include: {
           product: {
             include: {
-              productGroupFiles: true,
+              productGroupFiles: {
+                include: {
+                  file: true,
+                },
+              },
+              colors: true,
+              sizes: true,
             },
           },
           processes: true,

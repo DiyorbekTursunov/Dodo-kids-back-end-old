@@ -42,7 +42,13 @@ export const getAllProductPacksById = async (req: Request, res: Response) => {
         include: {
           product: {
             include: {
-              productGroupFiles: true,
+              productGroupFiles: {
+                include: {
+                  file: true,
+                },
+              },
+              colors: true,
+              sizes: true,
             },
           },
           processes: true,
