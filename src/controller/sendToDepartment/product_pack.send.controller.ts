@@ -139,7 +139,7 @@ export const sendToDepartment = async (req: Request, res: Response) => {
 
     // Determine if process is complete
     const isComplete = newSendedCount + newInvalidCount === totalCount;
-    const newStatus = isComplete ? "Yuborilgan" : "To'liq yuborilmagan";
+    const newStatus = isComplete ? "Yuborilgan" : "ToliqYuborilmagan";
 
     // Calculate remaining items
     const residueCount = totalCount - newSendedCount - newInvalidCount;
