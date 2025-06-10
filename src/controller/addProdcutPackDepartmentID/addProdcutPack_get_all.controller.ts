@@ -31,6 +31,11 @@ export const getAllProductPacksById = async (req: Request, res: Response) => {
     const whereClause = {
       departmentId,
       processIsOver: false,
+      processes: {
+        none: {
+          status: "Pending", // Exclude ProductPacks with any Pending process
+        },
+      },
     };
 
     // Fetch product packs with pagination and filtering

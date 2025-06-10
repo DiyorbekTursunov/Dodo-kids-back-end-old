@@ -30,7 +30,7 @@ const normalizeDepartment = (name: string): string => {
   return map[name.toLowerCase()] || name.toLowerCase();
 };
 
-// Interfaces aligned with Prisma schema
+// Interfaces
 interface Process {
   id: string;
   status: ProcessStatus;
@@ -40,6 +40,7 @@ interface Process {
   residueCount: number | null;
   invalidReason: string | null;
   department: { id: string; name: string };
+  date: Date;
 }
 
 interface ProductFile {
@@ -146,7 +147,7 @@ const transformProduct = (product: Product): TransformedProduct => {
 
   return {
     id: product.id,
-    name: product.product.model, // Added 'name' property
+    name: product.product.model,
     parentId: product.parentId,
     processIsOver: product.processIsOver,
     departmentId: product.departmentId,
@@ -223,8 +224,11 @@ export const getConsolidatedCaseTrackerStatus = async (
       return Object.values(ProcessStatus).includes(status as ProcessStatus);
     };
 
-    // Helper to map ProductPack to Product interface
+    // Helper to map ProductPack to Product interface, selecting only the latest process
     const mapProductPackToProduct = (pack: typeof productPacks[number]): Product => {
+      // Find the latest process based on date
+      const latestProcess = pack.processes.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+
       return {
         id: pack.id,
         parentId: pack.parentId,
@@ -239,35 +243,31 @@ export const getConsolidatedCaseTrackerStatus = async (
           model: pack.product.model,
           productGroupFiles: pack.product.productGroupFiles,
         },
-        processes: pack.processes.map((process) => {
-          if (!isValidProcessStatus(process.status)) {
-            console.warn(`Invalid status "${process.status}" for process ${process.id}, defaulting to ProcessStatus.Default`);
-          }
-          return {
-            id: process.id,
-            status: isValidProcessStatus(process.status) ? process.status : ProcessStatus.QabulQilingan,
-            acceptCount: process.acceptCount,
-            sentCount: process.sentCount,
-            invalidCount: process.invalidCount,
-            residueCount: process.residueCount,
-            invalidReason: process.invalidReason,
-            department: process.department,
-          };
-        }),
-        statuses: pack.processes.map((process) => ({
-          id: process.id,
-          status: isValidProcessStatus(process.status) ? process.status : ProcessStatus.QabulQilingan,
-          date: process.date,
-          processIsOver: process.processIsOver,
-          acceptCount: process.acceptCount,
-          sentCount: process.sentCount,
-          invalidCount: process.invalidCount,
-          residueCount: process.residueCount,
-          invalidReason: process.invalidReason,
-          department: process.department,
-          outsourseCompany: process.OutsourseCompany ?? null,
-          isOutsourced: process.isOutsourced,
-        })),
+        processes: latestProcess ? [{
+          id: latestProcess.id,
+          status: isValidProcessStatus(latestProcess.status) ? latestProcess.status : ProcessStatus.QabulQilingan,
+          acceptCount: latestProcess.acceptCount,
+          sentCount: latestProcess.sentCount,
+          invalidCount: latestProcess.invalidCount,
+          residueCount: latestProcess.residueCount,
+          invalidReason: latestProcess.invalidReason,
+          department: latestProcess.department,
+          date: latestProcess.date,
+        }] : [],
+        statuses: latestProcess ? [{
+          id: latestProcess.id,
+          status: isValidProcessStatus(latestProcess.status) ? latestProcess.status : ProcessStatus.QabulQilingan,
+          date: latestProcess.date,
+          processIsOver: latestProcess.processIsOver,
+          acceptCount: latestProcess.acceptCount,
+          sentCount: latestProcess.sentCount,
+          invalidCount: latestProcess.invalidCount,
+          residueCount: latestProcess.residueCount,
+          invalidReason: latestProcess.invalidReason,
+          department: latestProcess.department,
+          outsourseCompany: latestProcess.OutsourseCompany ?? null,
+          isOutsourced: latestProcess.isOutsourced,
+        }] : [],
       };
     };
 
